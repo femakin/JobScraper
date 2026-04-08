@@ -81,10 +81,10 @@ async function checkScraperAPIs(): Promise<Record<string, ServiceCheck>> {
     jobicy: "https://jobicy.com/api/v2/remote-jobs?count=1",
     himalayas: "https://himalayas.app/jobs/api?limit=1",
     workingnomads: "https://www.workingnomads.com/api/exposed_jobs/",
-    jobberman: "https://api.jobberman.com/v1/jobs?limit=1",
+    jobberman: "https://www.jobberman.com/jobs?q=frontend+developer",
     adzuna: "https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id=1dda950d&app_key=f20c7a14d09f33bf1f190385be48254b&results_per_page=1&what=developer",
-    arcdev: "https://api.arc.dev/v1/jobs?limit=1",
-    remoteco: "https://api.remote.co/v1/jobs?limit=1",
+    arcdev: "https://arc.dev/remote-jobs",
+    remoteco: "https://remote.co/remote-jobs/developer/",
 
   };
 
@@ -116,11 +116,18 @@ async function checkScraperAPIs(): Promise<Record<string, ServiceCheck>> {
     const url = healthUrls[scraper.id];
     if (!url) continue;
 
+    const htmlScrapers = new Set(["arcdev", "remoteco", "jobberman"]);
+    const timeout = htmlScrapers.has(scraper.id) ? 20000 : 10000;
+
     const start = Date.now();
     try {
       const res = await fetch(url, {
-        headers: { "User-Agent": "JobScraper/1.0 (health check)" },
-        signal: AbortSignal.timeout(10000),
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Accept: "text/html,application/json,*/*",
+        },
+        signal: AbortSignal.timeout(timeout),
       });
       results[scraper.id] = {
         status: res.ok ? "ok" : "error",
