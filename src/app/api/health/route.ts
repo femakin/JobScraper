@@ -154,17 +154,25 @@ export async function GET() {
     checkScraperAPIs(),
   ]);
 
-  const allServices = { supabase, openai, twilio, ...scrapers };
-  const hasErrors = Object.values(allServices).some((s) => {
-    if (typeof s === "object" && "status" in s) return s.status === "error";
-    return false;
-  });
-  const hasNotConfigured = Object.values(allServices).some((s) => {
-    if (typeof s === "object" && "status" in s) return s.status === "not_configured";
-    return false;
-  });
+  const coreServices = { supabase, openai, twilio };
+  const coreHasError = Object.values(coreServices).some(
+    (s) => s.status === "error"
+  );
+  const coreNotConfigured = Object.values(coreServices).some(
+    (s) => s.status === "not_configured"
+  );
 
-  const overallStatus = hasErrors ? "unhealthy" : hasNotConfigured ? "partially_configured" : "healthy";
+  const scraperValues = Object.values(scrapers);
+  const failedScrapers = scraperValues.filter((s) => s.status === "error").length;
+  const totalScrapers = scraperValues.length;
+
+  const overallStatus = coreHasError
+    ? "unhealthy"
+    : coreNotConfigured
+      ? "partially_configured"
+      : failedScrapers > 0
+        ? `degraded (${totalScrapers - failedScrapers}/${totalScrapers} scrapers ok)`
+        : "healthy";
 
   return NextResponse.json({
     status: overallStatus,
