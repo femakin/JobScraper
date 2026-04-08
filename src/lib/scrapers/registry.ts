@@ -8,6 +8,8 @@ import { scrapeWorkingnomads } from "./workingnomads";
 import { scrapeArcdev } from "./arcdev";
 import { scrapeRemoteco } from "./remoteco";
 import { scrapeJobberman } from "./jobberman";
+import { scrapeMoniepoint } from "./moniepoint";
+import { scrapeMyJobMag } from "./myjobmag";
 
 // ---------------------------------------------------------------------------
 // Scraper Registry
@@ -98,6 +100,20 @@ export const SCRAPERS: ScraperConfig[] = [
     website: "https://adzuna.com",
     scrape: scrapeAdzuna,
     enabled: true, // gracefully skips if API keys aren't set
+  },
+  {
+    id: "moniepoint",
+    name: "Moniepoint",
+    website: "https://moniepoint.com",
+    scrape: scrapeMoniepoint,
+    enabled: true,
+  },
+  {
+    id: "myjobmag",
+    name: "MyJobMag",
+    website: "https://myjobmag.com",
+    scrape: scrapeMyJobMag,
+    enabled: true,
   },
 ];
 

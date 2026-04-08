@@ -85,7 +85,8 @@ async function checkScraperAPIs(): Promise<Record<string, ServiceCheck>> {
     adzuna: "https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id=1dda950d&app_key=f20c7a14d09f33bf1f190385be48254b&results_per_page=1&what=developer",
     arcdev: "https://arc.dev/remote-jobs",
     remoteco: "https://remote.co/remote-jobs/developer/",
-
+    moniepoint: "https://boards-api.greenhouse.io/v1/boards/moniepoint/jobs",
+    myjobmag: "https://www.myjobmag.com/jobs-by-title/frontend-developer-remote",
   };
 
   for (const scraper of SCRAPERS) {
@@ -116,7 +117,7 @@ async function checkScraperAPIs(): Promise<Record<string, ServiceCheck>> {
     const url = healthUrls[scraper.id];
     if (!url) continue;
 
-    const htmlScrapers = new Set(["arcdev", "remoteco", "jobberman"]);
+    const htmlScrapers = new Set(["arcdev", "remoteco", "jobberman", "myjobmag"]);
     const timeout = htmlScrapers.has(scraper.id) ? 20000 : 10000;
 
     const start = Date.now();

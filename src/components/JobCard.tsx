@@ -29,6 +29,8 @@ function getSourceColor(source: string): string {
     remoteco: "bg-cyan-100 text-cyan-800",
     jobberman: "bg-green-100 text-green-800",
     adzuna: "bg-sky-100 text-sky-800",
+    moniepoint: "bg-indigo-100 text-indigo-800",
+    myjobmag: "bg-lime-100 text-lime-800",
   };
   return colors[source] || "bg-gray-100 text-gray-800";
 }

@@ -354,11 +354,44 @@ export function isPostedWithinHours(job: ScrapedJob, hours: number): boolean {
 }
 
 export function filterJobs(jobs: ScrapedJob[]): ScrapedJob[] {
-  return jobs.filter(
-    (job) =>
-      isMatchingRole(job) &&
-      isNigeriaFriendly(job) &&
-      !shouldExclude(job) &&
-      isPostedWithinHours(job, 24)
-  );
+  const reasons = { role: 0, location: 0, excluded: 0, recency: 0, noDate: 0 };
+  const samples: { title: string; location: string; posted_at?: string; reason: string }[] = [];
+
+  const passed = jobs.filter((job) => {
+    if (!isMatchingRole(job)) {
+      reasons.role++;
+      if (samples.length < 5) samples.push({ title: job.title, location: job.location, posted_at: job.posted_at, reason: "role_mismatch" });
+      return false;
+    }
+    if (!isNigeriaFriendly(job)) {
+      reasons.location++;
+      if (samples.length < 10) samples.push({ title: job.title, location: job.location, posted_at: job.posted_at, reason: "location_blocked" });
+      return false;
+    }
+    if (shouldExclude(job)) {
+      reasons.excluded++;
+      if (samples.length < 10) samples.push({ title: job.title, location: job.location, posted_at: job.posted_at, reason: "excluded_keyword" });
+      return false;
+    }
+    if (!job.posted_at) {
+      reasons.noDate++;
+      if (samples.length < 10) samples.push({ title: job.title, location: job.location, posted_at: job.posted_at, reason: "no_date" });
+      return false;
+    }
+    if (!isPostedWithinHours(job, 24)) {
+      reasons.recency++;
+      if (samples.length < 10) samples.push({ title: job.title, location: job.location, posted_at: job.posted_at, reason: "older_than_24h" });
+      return false;
+    }
+    return true;
+  });
+
+  // console.log("[FILTER DEBUG]", JSON.stringify({
+  //   total: jobs.length,
+  //   passed: passed.length,
+  //   rejected: reasons,
+  //   samples,
+  // }, null, 2));
+
+  return passed;
 }

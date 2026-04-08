@@ -25,6 +25,8 @@ const sources = [
   { id: "remoteco", label: "Remote.co" },
   { id: "jobberman", label: "Jobberman" },
   { id: "adzuna", label: "Adzuna" },
+  { id: "moniepoint", label: "Moniepoint" },
+  { id: "myjobmag", label: "MyJobMag" },
 ];
 
 const scoreFilters = [

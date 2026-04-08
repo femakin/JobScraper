@@ -490,9 +490,9 @@ Use this if your app is on Amplify/EC2 and always running. No Lambda function ne
 
 That's it! EventBridge will now call your scrape endpoint every 30 minutes.
 
-### Option B: Lambda + EventBridge (More control)
+### Option B: Lambda + EventBridge (Recommended)
 
-Use this if you want the scraping logic isolated in a Lambda function.
+Use this option. The Lambda function runs all 11 scrapers directly with a 5-minute timeout, bypassing the Amplify/Next.js API route timeout limits. It handles scraping, filtering, AI analysis, database storage, and WhatsApp notifications — all standalone, no dependency on your Next.js app.
 
 #### B1. Build the ZIP file on your machine
 
@@ -558,12 +558,20 @@ This creates `lambda/dist/function.zip`. You'll upload this in the next step.
 
 1. Still in the **Configuration** tab, click **Environment variables** in the left sidebar
 2. Click **Edit**
-3. Click **Add environment variable** and add these two:
+3. Click **Add environment variable** and add all of these:
 
    | Key | Value |
    |-----|-------|
-   | `APP_URL` | `https://YOUR-DEPLOYED-URL.com` |
-   | `SCRAPE_API_KEY` | same value as in your `.env.local` |
+   | `NEXT_PUBLIC_SUPABASE_URL` | `https://your-project.supabase.co` (same as `.env.local`) |
+   | `SUPABASE_SERVICE_ROLE_KEY` | your Supabase service role key (same as `.env.local`) |
+   | `OPENAI_API_KEY` | your OpenAI API key (same as `.env.local`) |
+   | `TWILIO_ACCOUNT_SID` | your Twilio Account SID (same as `.env.local`) |
+   | `TWILIO_AUTH_TOKEN` | your Twilio Auth Token (same as `.env.local`) |
+   | `TWILIO_WHATSAPP_FROM` | `whatsapp:+14155238886` (or your Twilio number) |
+   | `ADZUNA_APP_ID` | your Adzuna App ID (optional, leave empty to skip) |
+   | `ADZUNA_APP_KEY` | your Adzuna App Key (optional, leave empty to skip) |
+
+   The Lambda runs the scraping logic directly (not via the Next.js app), so it needs all service keys.
 
 4. Click **Save**
 
