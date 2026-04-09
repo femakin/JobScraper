@@ -22,7 +22,7 @@ async function runScraper(
 
   try {
     const raw = await config.scrape();
-    const filtered = filterJobs(raw);
+    const filtered = config.skipFilter ? raw : filterJobs(raw);
     const newJobs = await filterNewJobs(filtered);
 
     await supabaseAdmin.from("scrape_runs").insert({

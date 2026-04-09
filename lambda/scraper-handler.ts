@@ -209,7 +209,7 @@ export async function handler(event: unknown) {
     try {
       console.log(`Running scraper: ${config.id}`);
       const raw = await config.scrape();
-      const filtered = filterJobs(raw);
+      const filtered = config.skipFilter ? raw : filterJobs(raw);
       const newJobs = await filterNewJobs(filtered);
 
       await getSupabase().from("scrape_runs").insert({

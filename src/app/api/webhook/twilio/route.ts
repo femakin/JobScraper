@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
 
     const responseText = await handleIncomingMessage(from, body);
 
-    // Return TwiML response
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Message>${responseText}</Message>

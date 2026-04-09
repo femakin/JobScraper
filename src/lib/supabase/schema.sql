@@ -57,6 +57,22 @@ CREATE TABLE IF NOT EXISTS scrape_runs (
   completed_at TIMESTAMPTZ
 );
 
+-- WhatsApp job submissions: staging table for forwarded job posts
+CREATE TABLE IF NOT EXISTS whatsapp_job_submissions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  phone_number TEXT NOT NULL,
+  raw_message TEXT NOT NULL,
+  parsed_title TEXT,
+  parsed_company TEXT,
+  parsed_location TEXT,
+  parsed_url TEXT,
+  parsed_description TEXT,
+  parsed_salary TEXT,
+  parsed_tags TEXT[] DEFAULT '{}',
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_jobs_hash ON jobs(job_hash);
 CREATE INDEX IF NOT EXISTS idx_jobs_source ON jobs(source);
@@ -68,12 +84,15 @@ CREATE INDEX IF NOT EXISTS idx_subscribers_active ON subscribers(is_active);
 CREATE INDEX IF NOT EXISTS idx_subscribers_phone ON subscribers(phone_number);
 CREATE INDEX IF NOT EXISTS idx_notifications_job ON notifications(job_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_subscriber ON notifications(subscriber_id);
+CREATE INDEX IF NOT EXISTS idx_wa_submissions_status ON whatsapp_job_submissions(status);
+CREATE INDEX IF NOT EXISTS idx_wa_submissions_created ON whatsapp_job_submissions(created_at DESC);
 
 -- Row Level Security
 ALTER TABLE jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscribers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scrape_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE whatsapp_job_submissions ENABLE ROW LEVEL SECURITY;
 
 -- Public read access for jobs (anyone can view)
 CREATE POLICY "Jobs are publicly readable"
@@ -98,6 +117,11 @@ CREATE POLICY "Service role full access on notifications"
 
 CREATE POLICY "Service role full access on scrape_runs"
   ON scrape_runs FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY "Service role full access on whatsapp_job_submissions"
+  ON whatsapp_job_submissions FOR ALL
   USING (true)
   WITH CHECK (true);
 

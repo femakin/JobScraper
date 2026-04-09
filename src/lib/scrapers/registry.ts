@@ -10,6 +10,7 @@ import { scrapeRemoteco } from "./remoteco";
 import { scrapeJobberman } from "./jobberman";
 import { scrapeMoniepoint } from "./moniepoint";
 import { scrapeMyJobMag } from "./myjobmag";
+import { scrapeWhatsApp } from "./whatsapp";
 
 // ---------------------------------------------------------------------------
 // Scraper Registry
@@ -35,6 +36,8 @@ export interface ScraperConfig {
   scrape: () => Promise<ScrapedJob[]>;
   /** Is this source enabled? Set to false to temporarily disable */
   enabled: boolean;
+  /** Skip keyword/location/recency filtering (for human-curated sources) */
+  skipFilter?: boolean;
 }
 
 export const SCRAPERS: ScraperConfig[] = [
@@ -113,6 +116,13 @@ export const SCRAPERS: ScraperConfig[] = [
     name: "MyJobMag",
     website: "https://myjobmag.com",
     scrape: scrapeMyJobMag,
+    enabled: true,
+  },
+  {
+    id: "whatsapp",
+    name: "WhatsApp Groups",
+    website: "https://wa.me",
+    scrape: scrapeWhatsApp,
     enabled: true,
   },
 ];

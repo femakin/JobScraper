@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# whatsapp auth session (contains private keys)
+whatsapp-auth/
+
 # vercel
 .vercel
 
