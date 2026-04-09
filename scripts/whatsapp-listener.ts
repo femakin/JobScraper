@@ -47,7 +47,29 @@ const GROUP_IDS = (process.env.WHATSAPP_GROUP_IDS || "")
 
 const LIST_GROUPS_MODE = process.argv.includes("--list-groups");
 
-const MIN_MESSAGE_LENGTH = 50;
+const MIN_MESSAGE_LENGTH = 80;
+
+const JOB_SIGNAL_KEYWORDS = [
+  "hiring", "we're hiring", "we are hiring", "we are looking",
+  "looking for", "we need", "vacancy", "vacancies", "open position",
+  "open role", "job opening", "apply now", "apply here", "apply via",
+  "apply at", "apply through", "send cv", "send resume", "send your cv",
+  "send your resume", "join our team", "join the team",
+  "is hiring", "is looking for", "is recruiting",
+  "urgently needed", "urgently hiring", "immediate hire",
+  "full-time", "full time", "part-time", "part time", "contract",
+  "freelance", "internship", "intern",
+  "salary", "compensation", "per month", "per annum", "monthly",
+  "remote position", "onsite", "on-site", "hybrid",
+  "years of experience", "years experience", "yrs experience",
+  "responsibilities", "requirements", "qualifications",
+  "job description", "role:", "position:",
+];
+
+function hasJobSignal(text: string): boolean {
+  const lower = text.toLowerCase();
+  return JOB_SIGNAL_KEYWORDS.some((kw) => lower.includes(kw));
+}
 
 // ---------------------------------------------------------------------------
 // List groups mode
@@ -117,30 +139,34 @@ async function processMessage(
   const text = extractMessageText(msg);
   if (!text || text.length < MIN_MESSAGE_LENGTH) return;
 
+  if (!hasJobSignal(text)) return;
+
   const sender = key.participant || remoteJid || "unknown";
-  const groupName = remoteJid;
+  const senderPhone = sender.replace("@s.whatsapp.net", "").replace("@lid", "");
 
   console.log(
-    `[WhatsApp] New candidate from ${groupName} (${text.length} chars)`
+    `[WhatsApp] Job signal detected from ${remoteJid} (${text.length} chars)`
   );
 
   try {
     const parsed = await parseJobMessage(text);
     if (!parsed) {
-      console.log(`[WhatsApp] Not a job posting — skipped`);
+      console.log(`[WhatsApp] AI rejected — not a job posting`);
       return;
     }
+
+    const contactUrl = parsed.url || `https://wa.me/${senderPhone}`;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (getSupabase() as any)
       .from("whatsapp_job_submissions")
       .insert({
-        phone_number: sender.replace("@s.whatsapp.net", ""),
+        phone_number: senderPhone,
         raw_message: text.slice(0, 5000),
         parsed_title: parsed.title,
         parsed_company: parsed.company,
         parsed_location: parsed.location,
-        parsed_url: parsed.url,
+        parsed_url: contactUrl,
         parsed_description: parsed.description,
         parsed_salary: parsed.salary_range,
         parsed_tags: parsed.tags,

@@ -21,20 +21,36 @@ function getOpenAI() {
 export async function parseJobMessage(
   rawMessage: string
 ): Promise<ParsedWhatsAppJob | null> {
-  const prompt = `Extract job posting details from this WhatsApp message. The message may be a forwarded job listing, a link with description, or raw job details.
+  const prompt = `You are a strict job posting classifier. Determine if this WhatsApp message is an ACTUAL JOB VACANCY — someone actively hiring or advertising an open position.
+
+A message IS a job posting ONLY if it has CLEAR HIRING INTENT, such as:
+- "We are hiring...", "Looking for a [role] to join...", "Open position for..."
+- A company posting a role with requirements, responsibilities, or salary
+- A forwarded job listing with title, company, and how to apply
+- "Send your CV/resume to...", "Apply at..."
+
+A message is NOT a job posting if it is:
+- Someone asking a technical question ("How do I...", "Has anyone implemented...")
+- Someone looking FOR a job ("I am a developer looking for...")
+- General discussion, opinions, or advice about tech/work
+- Casual conversation mentioning tech terms
+- Someone asking for help or recommendations
+- Gossip or stories about companies/salaries without actual openings
+
+Be VERY strict. When in doubt, set is_job to false. Most group messages are conversation, not job ads.
 
 Message:
 ${rawMessage.slice(0, 3000)}
 
-Extract and respond in JSON with:
-1. "title": Job title (e.g. "Senior Frontend Engineer"). Best guess if unclear.
-2. "company": Company name. "Unknown" if not mentioned.
-3. "location": Job location (e.g. "Remote", "Lagos, Nigeria"). Default "Remote" if not specified.
-4. "url": Application URL or link. Empty string if none found.
-5. "description": Clean summary of job requirements and responsibilities (max 500 chars).
-6. "salary_range": Salary if mentioned, otherwise null.
-7. "tags": Array of technical skills/keywords mentioned (max 8).
-8. "is_job": true if this message contains a job posting, false if it's random text.
+Respond in JSON:
+1. "is_job": true ONLY if this is a genuine job vacancy/hiring post. false for everything else.
+2. "title": Job title if is_job is true, otherwise empty string.
+3. "company": Company name. Empty string if not mentioned or is_job is false.
+4. "location": Job location. Empty string if not specified or is_job is false.
+5. "url": Application URL or link. Empty string if none found.
+6. "description": Summary of requirements and responsibilities (max 500 chars). Empty if is_job is false.
+7. "salary_range": Salary if mentioned, otherwise null.
+8. "tags": Array of technical skills mentioned (max 8). Empty array if is_job is false.
 
 Return ONLY valid JSON, no markdown.`;
 
