@@ -10,6 +10,8 @@ function getClient() {
   return twilio(accountSid, authToken);
 }
 
+let dailyLimitReached = false;
+
 function formatJobMessage(job: Job): string {
   const salary = job.salary_range ? `\nSalary: ${job.salary_range}` : "";
   const tags = job.tags?.length ? `\nSkills: ${job.tags.slice(0, 5).join(", ")}` : "";
@@ -39,6 +41,8 @@ export async function sendJobNotification(
   job: Job,
   subscriber: Subscriber
 ): Promise<string | null> {
+  if (dailyLimitReached) return null;
+
   try {
     const client = getClient();
     const message = await client.messages.create({
@@ -55,7 +59,13 @@ export async function sendJobNotification(
     });
 
     return message.sid;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 63038 || error?.status === 429) {
+      console.warn("Twilio daily message limit reached — skipping remaining notifications");
+      dailyLimitReached = true;
+      return null;
+    }
+
     console.error(
       `Failed to notify ${subscriber.phone_number} for job ${job.id}:`,
       error
@@ -73,6 +83,8 @@ export async function sendJobNotification(
 }
 
 export async function notifyAllSubscribers(jobs: Job[]): Promise<number> {
+  dailyLimitReached = false;
+
   const { data: subscribers } = await supabaseAdmin
     .from("subscribers")
     .select("*")
@@ -83,14 +95,20 @@ export async function notifyAllSubscribers(jobs: Job[]): Promise<number> {
   let sentCount = 0;
 
   for (const job of jobs) {
+    if (dailyLimitReached) {
+      console.log(`Daily limit reached — skipping notifications for remaining ${jobs.indexOf(job) === -1 ? "" : jobs.length - jobs.indexOf(job)} jobs`);
+      break;
+    }
+
     for (const subscriber of subscribers) {
+      if (dailyLimitReached) break;
+
       const minRelevance = subscriber.preferences?.min_relevance ?? 60;
       if (job.relevance_score < minRelevance) continue;
 
       const sid = await sendJobNotification(job, subscriber);
       if (sid) sentCount++;
 
-      // Rate limit: Twilio allows ~1 msg/sec on trial
       await new Promise((r) => setTimeout(r, 1100));
     }
 
@@ -98,6 +116,10 @@ export async function notifyAllSubscribers(jobs: Job[]): Promise<number> {
       .from("jobs")
       .update({ is_notified: true })
       .eq("id", job.id);
+  }
+
+  if (dailyLimitReached) {
+    console.log(`Sent ${sentCount} notifications before hitting Twilio daily limit`);
   }
 
   return sentCount;

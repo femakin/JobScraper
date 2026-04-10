@@ -10,6 +10,11 @@ const SEARCH_PAGES = [
   "https://www.myjobmag.com/jobs-by-title/full-stack-developer",
 ];
 
+const MONTH_NAMES = [
+  "january","february","march","april","may","june",
+  "july","august","september","october","november","december",
+];
+
 function parseRelativeDate(text: string): string | undefined {
   const now = new Date();
   const lower = text.toLowerCase().trim();
@@ -22,16 +27,38 @@ function parseRelativeDate(text: string): string | undefined {
     return now.toISOString();
   }
 
-  const match = lower.match(/(\d+)\s*(day|week|month|hour|minute)s?\s*ago/);
-  if (match) {
-    const n = parseInt(match[1], 10);
-    const unit = match[2];
+  const relMatch = lower.match(/(\d+)\s*(day|week|month|hour|minute)s?\s*ago/);
+  if (relMatch) {
+    const n = parseInt(relMatch[1], 10);
+    const unit = relMatch[2];
     if (unit === "minute") now.setMinutes(now.getMinutes() - n);
     else if (unit === "hour") now.setHours(now.getHours() - n);
     else if (unit === "day") now.setDate(now.getDate() - n);
     else if (unit === "week") now.setDate(now.getDate() - n * 7);
     else if (unit === "month") now.setMonth(now.getMonth() - n);
     return now.toISOString();
+  }
+
+  // Absolute dates: "24 March", "30 March 2026", "March 24"
+  const absMatch = lower.match(
+    /(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(\d{4}))?/
+  );
+  if (absMatch) {
+    const day = parseInt(absMatch[1], 10);
+    const month = MONTH_NAMES.indexOf(absMatch[2]);
+    const year = absMatch[3] ? parseInt(absMatch[3], 10) : now.getFullYear();
+    if (month >= 0) return new Date(year, month, day).toISOString();
+  }
+
+  // "March 24" or "March 24, 2026"
+  const absMatch2 = lower.match(
+    /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:[,\s]+(\d{4}))?/
+  );
+  if (absMatch2) {
+    const month = MONTH_NAMES.indexOf(absMatch2[1]);
+    const day = parseInt(absMatch2[2], 10);
+    const year = absMatch2[3] ? parseInt(absMatch2[3], 10) : now.getFullYear();
+    if (month >= 0) return new Date(year, month, day).toISOString();
   }
 
   return undefined;
@@ -104,28 +131,30 @@ export async function scrapeMyJobMag(): Promise<ScrapedJob[]> {
             itemTexts.push($(item).text().trim());
           });
 
-          const location =
-            itemTexts.find((t) =>
-              t.match(
-                /(Lagos|Abuja|Remote|Nigeria|Nationwide|Ibadan|Port Harcourt|Kano|Hybrid)/i
-              )
-            ) || "Nigeria";
+          const DATE_PATTERN =
+            /\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)(?:\s+\d{4})?|(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:[,\s]+\d{4})?|Today|Yesterday|Just now|\d+\s*(?:day|week|month|hour|minute)s?\s*ago/i;
+
+          let dateText = "";
+          for (const t of itemTexts) {
+            const dm = t.match(DATE_PATTERN);
+            if (dm) {
+              dateText = dm[0];
+              break;
+            }
+          }
+
+          const locationItem = itemTexts.find((t) =>
+            t.match(
+              /(Lagos|Abuja|Remote|Nigeria|Nationwide|Ibadan|Port Harcourt|Kano|Hybrid)/i
+            )
+          );
+          const location = locationItem
+            ? locationItem.replace(DATE_PATTERN, "").replace(/[\n\r]+/g, " ").trim() || "Nigeria"
+            : "Nigeria";
 
           const jobType = itemTexts.find((t) =>
             t.match(/(Full Time|Part Time|Contract|Internship|Freelance)/i)
           );
-
-          let dateText = "";
-          card.find("li.job-item").each((_, item) => {
-            const t = $(item).text().trim();
-            if (
-              t.match(
-                /(Today|Yesterday|Just now|\d+\s*(?:day|week|month|hour|minute)s?\s*ago)/i
-              )
-            ) {
-              dateText = t;
-            }
-          });
 
           allJobs.push({
             title,
