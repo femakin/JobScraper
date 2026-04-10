@@ -120,9 +120,14 @@ async function notifySubscribers(insertedJobs: Job[]): Promise<number> {
   const client = twilio(accountSid, authToken);
 
   let sentCount = 0;
+  let dailyLimitReached = false;
 
   for (const job of notifyableJobs) {
+    if (dailyLimitReached) break;
+
     for (const subscriber of subscribers) {
+      if (dailyLimitReached) break;
+
       const minRelevance = subscriber.preferences?.min_relevance ?? 60;
       if (job.relevance_score < minRelevance) continue;
 
@@ -165,7 +170,13 @@ async function notifySubscribers(insertedJobs: Job[]): Promise<number> {
           twilio_sid: message.sid,
         });
         sentCount++;
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.code === 63038 || error?.status === 429) {
+          console.warn("Twilio daily limit reached — stopping notifications");
+          dailyLimitReached = true;
+          break;
+        }
+
         console.error(
           `Notification failed for ${subscriber.phone_number}:`,
           error
@@ -188,6 +199,10 @@ async function notifySubscribers(insertedJobs: Job[]): Promise<number> {
       .eq("id", job.id);
   }
 
+  if (dailyLimitReached) {
+    console.log(`Sent ${sentCount} notifications before hitting Twilio daily limit`);
+  }
+
   return sentCount;
 }
 
@@ -200,8 +215,23 @@ interface ScrapeResult {
   error?: string;
 }
 
+const RUN_LOCK_MINUTES = 5;
+
 export async function handler(event: unknown) {
   console.log("Lambda scraper invoked", JSON.stringify(event));
+
+  // Prevent duplicate runs from Lambda retries / overlapping schedules
+  const lockCutoff = new Date(Date.now() - RUN_LOCK_MINUTES * 60 * 1000).toISOString();
+  const { data: recentRun } = await getSupabase()
+    .from("scrape_runs")
+    .select("started_at")
+    .gte("started_at", lockCutoff)
+    .limit(1);
+
+  if (recentRun && recentRun.length > 0) {
+    console.log(`Skipping — a run already started within the last ${RUN_LOCK_MINUTES} minutes`);
+    return { success: true, skipped: true, reason: "recent_run_exists" };
+  }
 
   const scrapers = getEnabledScrapers();
   const allNewJobs: ScrapedJob[] = [];
@@ -324,8 +354,21 @@ export async function handler(event: unknown) {
     }
   }
 
-  // WhatsApp notifications
-  const notificationsSent = await notifySubscribers(insertedJobs);
+  // Pick up any un-notified jobs from previous timed-out runs
+  const { data: unnotifiedJobs } = await getSupabase()
+    .from("jobs")
+    .select("*")
+    .eq("is_notified", false)
+    .gte("relevance_score", PIPELINE_CONFIG.MIN_SCORE_TO_NOTIFY);
+
+  const allJobsToNotify = [
+    ...insertedJobs,
+    ...(unnotifiedJobs || []).filter(
+      (uj) => !insertedJobs.some((ij) => ij.id === uj.id)
+    ),
+  ];
+
+  const notificationsSent = await notifySubscribers(allJobsToNotify);
 
   const response = {
     success: true,

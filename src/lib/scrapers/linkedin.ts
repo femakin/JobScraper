@@ -56,7 +56,7 @@ export async function scrapeLinkedIn(): Promise<ScrapedJob[]> {
         const start = page * RESULTS_PER_PAGE;
         const params = new URLSearchParams({
           keywords: query,
-          location: "Worldwide",
+          location: "Nigeria",
           f_WT: "2", // remote filter
           start: String(start),
         });
