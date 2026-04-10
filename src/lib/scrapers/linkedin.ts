@@ -126,7 +126,7 @@ export async function scrapeLinkedIn(): Promise<ScrapedJob[]> {
               source: "linkedin",
               salary_range: salary,
               tags: [],
-              posted_at: postedAt,
+              posted_at: postedAt || new Date().toISOString(),
             });
 
             cardsFound++;

@@ -40,7 +40,7 @@ function parseJob(raw: GreenhouseJob): ScrapedJob | null {
       description,
       source: "moniepoint",
       tags: departments.filter(Boolean),
-      posted_at: publishedAt || undefined,
+      posted_at: publishedAt || new Date().toISOString(),
     };
   } catch {
     return null;

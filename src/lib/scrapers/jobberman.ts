@@ -192,7 +192,7 @@ export async function scrapeJobberman(): Promise<ScrapedJob[]> {
               "Nigeria",
               ...(typeBadge ? [typeBadge] : []),
             ],
-            posted_at: postedAt,
+            posted_at: postedAt || new Date().toISOString(),
           });
         } catch {
           // Skip malformed card

@@ -294,7 +294,7 @@ export const PIPELINE_CONFIG = {
    *  - "reject": reject outright (strictest — no date = no pass)
    *  - "assume_recent": treat as posted now, but capped per source by MAX_DATELESS_PER_SOURCE
    */
-  MISSING_DATE_STRATEGY: "assume_recent" as "assume_recent" | "reject",
+  MISSING_DATE_STRATEGY: "reject" as "assume_recent" | "reject",
 
   /** Max dateless jobs allowed per scraper source (only applies when MISSING_DATE_STRATEGY = "assume_recent") */
   MAX_DATELESS_PER_SOURCE: 3,

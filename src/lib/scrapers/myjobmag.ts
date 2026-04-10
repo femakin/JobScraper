@@ -39,9 +39,9 @@ function parseRelativeDate(text: string): string | undefined {
     return now.toISOString();
   }
 
-  // Absolute dates: "24 March", "30 March 2026", "March 24"
+  // Absolute dates: "24 March", "30 March 2026", "10 November, 2023"
   const absMatch = lower.match(
-    /(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(\d{4}))?/
+    /(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:[,\s]+(\d{4}))?/
   );
   if (absMatch) {
     const day = parseInt(absMatch[1], 10);
@@ -132,7 +132,7 @@ export async function scrapeMyJobMag(): Promise<ScrapedJob[]> {
           });
 
           const DATE_PATTERN =
-            /\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)(?:\s+\d{4})?|(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:[,\s]+\d{4})?|Today|Yesterday|Just now|\d+\s*(?:day|week|month|hour|minute)s?\s*ago/i;
+            /\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)(?:[,\s]+\d{4})?|(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:[,\s]+\d{4})?|Today|Yesterday|Just now|\d+\s*(?:day|week|month|hour|minute)s?\s*ago/i;
 
           let dateText = "";
           for (const t of itemTexts) {
@@ -169,7 +169,7 @@ export async function scrapeMyJobMag(): Promise<ScrapedJob[]> {
               "Nigeria",
               ...(jobType ? [jobType] : []),
             ],
-            posted_at: parseRelativeDate(dateText),
+            posted_at: parseRelativeDate(dateText) || new Date().toISOString(),
           });
         } catch {
           // Skip malformed card

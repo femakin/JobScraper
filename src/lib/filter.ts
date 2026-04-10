@@ -80,7 +80,10 @@ export function isPostedWithinHours(job: ScrapedJob, hours: number): boolean {
     const posted = new Date(job.posted_at);
     if (isNaN(posted.getTime())) return false;
 
-    const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const now = Date.now();
+    if (posted.getTime() > now) return false;
+
+    const cutoff = new Date(now - hours * 60 * 60 * 1000);
     return posted >= cutoff;
   } catch {
     return false;

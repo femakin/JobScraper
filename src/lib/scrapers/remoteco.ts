@@ -133,7 +133,7 @@ export async function scrapeRemoteco(): Promise<ScrapedJob[]> {
                 !t.match(/\$/) &&
                 !t.match(/(Full-Time|Part-Time|Employee)/i)
             ),
-            posted_at: parseRelativeDate(dateText),
+            posted_at: parseRelativeDate(dateText) || new Date().toISOString(),
           });
         } catch {
           // Skip malformed card

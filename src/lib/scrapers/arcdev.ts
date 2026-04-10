@@ -80,7 +80,7 @@ function parseArcJob(raw: AnyJob, isFeatured: boolean): ScrapedJob | null {
       source: "arcdev",
       salary_range: isFeatured ? formatSalary(raw) : undefined,
       tags,
-      posted_at: safeDate(raw.postedAt),
+      posted_at: safeDate(raw.postedAt) || new Date().toISOString(),
     };
   } catch {
     return null;
