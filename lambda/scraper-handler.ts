@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { filterJobs } from "../src/lib/filter";
 import { getEnabledScrapers } from "../src/lib/scrapers/registry";
+import { PIPELINE_CONFIG } from "../src/lib/config";
 import type { ScrapedJob, Job, AIJobAnalysis } from "../src/lib/types";
 import OpenAI from "openai";
 import twilio from "twilio";
@@ -100,7 +101,9 @@ async function filterNewJobs(jobs: ScrapedJob[]): Promise<ScrapedJob[]> {
 }
 
 async function notifySubscribers(insertedJobs: Job[]): Promise<number> {
-  const notifyableJobs = insertedJobs.filter((j) => j.relevance_score >= 60);
+  const notifyableJobs = insertedJobs.filter(
+    (j) => j.relevance_score >= PIPELINE_CONFIG.MIN_SCORE_TO_NOTIFY
+  );
   if (notifyableJobs.length === 0) return 0;
 
   const { data: subscribers } = await getSupabase()
@@ -291,10 +294,9 @@ export async function handler(event: unknown) {
     }
   }
 
-  // Insert jobs with relevance >= 40
   const insertedJobs: Job[] = [];
   for (const [job, analysis] of analyses) {
-    if (analysis.relevance_score < 40) continue;
+    if (analysis.relevance_score < PIPELINE_CONFIG.MIN_SCORE_TO_INSERT) continue;
 
     const hash = hashJob(job);
     const { data, error } = await getSupabase()

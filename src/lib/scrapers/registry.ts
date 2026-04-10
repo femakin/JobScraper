@@ -11,6 +11,7 @@ import { scrapeJobberman } from "./jobberman";
 import { scrapeMoniepoint } from "./moniepoint";
 import { scrapeMyJobMag } from "./myjobmag";
 import { scrapeWhatsApp } from "./whatsapp";
+import { scrapeLinkedIn } from "./linkedin";
 
 // ---------------------------------------------------------------------------
 // Scraper Registry
@@ -123,6 +124,13 @@ export const SCRAPERS: ScraperConfig[] = [
     name: "WhatsApp Groups",
     website: "https://wa.me",
     scrape: scrapeWhatsApp,
+    enabled: true,
+  },
+  {
+    id: "linkedin",
+    name: "LinkedIn",
+    website: "https://linkedin.com",
+    scrape: scrapeLinkedIn,
     enabled: true,
   },
 ];

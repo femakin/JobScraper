@@ -33,9 +33,10 @@ export async function scrapeRemoteOK(): Promise<ScrapedJob[]> {
       const response = await fetch(url, {
         headers: {
           "User-Agent":
-            "JobScraper/1.0 (job aggregation service; contact@example.com)",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Accept: "application/json",
         },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) continue;

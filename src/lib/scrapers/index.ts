@@ -5,6 +5,7 @@ import { analyzeJobsBatch } from "../openai";
 import { notifyAllSubscribers } from "../twilio";
 import { getEnabledScrapers, type ScraperConfig } from "./registry";
 import type { ScrapedJob, Job } from "../types";
+import { PIPELINE_CONFIG } from "../config";
 
 export interface ScrapeResult {
   source: string;
@@ -104,11 +105,10 @@ export async function runAllScrapers(): Promise<{
   // Run AI analysis on all new unique jobs
   const analyses = await analyzeJobsBatch(uniqueJobs);
 
-  // Insert jobs with relevance >= 40 into database
   const insertedJobs: Job[] = [];
 
   for (const [job, analysis] of analyses) {
-    if (analysis.relevance_score < 40) continue;
+    if (analysis.relevance_score < PIPELINE_CONFIG.MIN_SCORE_TO_INSERT) continue;
 
     const hash = generateJobHash(job);
     const { data, error } = await supabaseAdmin
@@ -136,8 +136,9 @@ export async function runAllScrapers(): Promise<{
     }
   }
 
-  // Notify subscribers about high-relevance jobs (60+)
-  const notifyableJobs = insertedJobs.filter((j) => j.relevance_score >= 60);
+  const notifyableJobs = insertedJobs.filter(
+    (j) => j.relevance_score >= PIPELINE_CONFIG.MIN_SCORE_TO_NOTIFY
+  );
   const notificationsSent = await notifyAllSubscribers(notifyableJobs);
 
   return {

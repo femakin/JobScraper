@@ -87,6 +87,7 @@ async function checkScraperAPIs(): Promise<Record<string, ServiceCheck>> {
     remoteco: "https://remote.co/remote-jobs/developer/",
     moniepoint: "https://boards-api.greenhouse.io/v1/boards/moniepoint/jobs",
     myjobmag: "https://www.myjobmag.com/jobs-by-title/frontend-developer-remote",
+    linkedin: "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=frontend+developer&start=0",
   };
 
   for (const scraper of SCRAPERS) {
@@ -117,7 +118,7 @@ async function checkScraperAPIs(): Promise<Record<string, ServiceCheck>> {
     const url = healthUrls[scraper.id];
     if (!url) continue;
 
-    const htmlScrapers = new Set(["arcdev", "remoteco", "jobberman", "myjobmag"]);
+    const htmlScrapers = new Set(["arcdev", "remoteco", "jobberman", "myjobmag", "linkedin"]);
     const timeout = htmlScrapers.has(scraper.id) ? 20000 : 10000;
 
     const start = Date.now();
