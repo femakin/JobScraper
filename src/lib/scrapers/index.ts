@@ -26,6 +26,10 @@ async function runScraper(
     const filtered = config.skipFilter ? raw : filterJobs(raw);
     const newJobs = await filterNewJobs(filtered);
 
+    await supabaseAdmin
+      .from("scrape_runs")
+      .delete()
+      .eq("source", config.id);
     await supabaseAdmin.from("scrape_runs").insert({
       source: config.id,
       jobs_found: raw.length,
@@ -48,6 +52,10 @@ async function runScraper(
     const errorMsg = error instanceof Error ? error.message : "Unknown error";
     console.error(`Scraper ${config.id} failed:`, errorMsg);
 
+    await supabaseAdmin
+      .from("scrape_runs")
+      .delete()
+      .eq("source", config.id);
     await supabaseAdmin.from("scrape_runs").insert({
       source: config.id,
       jobs_found: 0,

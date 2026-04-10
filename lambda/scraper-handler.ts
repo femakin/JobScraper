@@ -245,6 +245,10 @@ export async function handler(event: unknown) {
       const filtered = config.skipFilter ? raw : filterJobs(raw);
       const newJobs = await filterNewJobs(filtered);
 
+      await getSupabase()
+        .from("scrape_runs")
+        .delete()
+        .eq("source", config.id);
       await getSupabase().from("scrape_runs").insert({
         source: config.id,
         jobs_found: raw.length,
@@ -270,6 +274,10 @@ export async function handler(event: unknown) {
         error instanceof Error ? error.message : "Unknown error";
       console.error(`Scraper ${config.id} failed:`, errorMsg);
 
+      await getSupabase()
+        .from("scrape_runs")
+        .delete()
+        .eq("source", config.id);
       await getSupabase().from("scrape_runs").insert({
         source: config.id,
         jobs_found: 0,
