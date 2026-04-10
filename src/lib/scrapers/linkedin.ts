@@ -61,7 +61,8 @@ export async function scrapeLinkedIn(): Promise<ScrapedJob[]> {
           start: String(start),
         });
 
-        const url = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?${params}`;
+        // const url = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?${params}`;
+        const url = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=frontend+developer&location=nigeria&f_WT=2&start=0`
 
         const response = await fetch(url, {
           headers: {
