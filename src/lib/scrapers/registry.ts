@@ -12,6 +12,7 @@ import { scrapeMoniepoint } from "./moniepoint";
 import { scrapeMyJobMag } from "./myjobmag";
 import { scrapeWhatsApp } from "./whatsapp";
 import { scrapeLinkedIn } from "./linkedin";
+import { scrapeJobsInNigeria } from "./jobsinnigeria";
 
 // ---------------------------------------------------------------------------
 // Scraper Registry
@@ -131,6 +132,13 @@ export const SCRAPERS: ScraperConfig[] = [
     name: "LinkedIn",
     website: "https://linkedin.com",
     scrape: scrapeLinkedIn,
+    enabled: true,
+  },
+  {
+    id: "jobsinnigeria",
+    name: "Jobs in Nigeria",
+    website: "https://jobsinnigeria.careers",
+    scrape: scrapeJobsInNigeria,
     enabled: true,
   },
 ];

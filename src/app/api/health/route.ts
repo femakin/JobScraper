@@ -88,6 +88,7 @@ async function checkScraperAPIs(): Promise<Record<string, ServiceCheck>> {
     moniepoint: "https://boards-api.greenhouse.io/v1/boards/moniepoint/jobs",
     myjobmag: "https://www.myjobmag.com/jobs-by-title/frontend-developer-remote",
     linkedin: "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=frontend+developer&start=0",
+    jobsinnigeria: "https://jobsinnigeria.careers/feed/",
   };
 
   for (const scraper of SCRAPERS) {

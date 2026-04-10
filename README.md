@@ -1,10 +1,10 @@
 # JobScraper - Remote Frontend Jobs for Nigerian Developers
 
-An AI-powered job scraping webapp with WhatsApp notifications. It automatically fetches remote frontend developer jobs from 14 sources, filters them for Nigeria-friendly opportunities, scores them with OpenAI, and sends WhatsApp alerts via Twilio.
+An AI-powered job scraping webapp with WhatsApp notifications. It automatically fetches remote frontend developer jobs from 15 sources, filters them for Nigeria-friendly opportunities, scores them with OpenAI, and sends WhatsApp alerts via Twilio.
 
 ## Features
 
-- **14-source scraping** - Remotive, RemoteOK, Jobicy, Himalayas, Working Nomads, Arc.dev, Remote.co, Jobberman, Adzuna, Moniepoint, MyJobMag, WhatsApp Groups, LinkedIn (all public APIs/pages, no login bypass)
+- **15-source scraping** - Remotive, RemoteOK, Jobicy, Himalayas, Working Nomads, Arc.dev, Remote.co, Jobberman, Adzuna, Moniepoint, MyJobMag, WhatsApp Groups, LinkedIn, Jobs in Nigeria (all public APIs/pages/RSS feeds, no login bypass)
 - **5-layer filtering** - Role matching, location verification, exclusion rules, date validation, and recency check
 - **AI relevance scoring** - OpenAI rates each job 0-100 for relevance to Nigerian frontend developers
 - **Smart deduplication** - SHA-256 hash-based dedup prevents duplicate notifications
@@ -121,6 +121,7 @@ See [`lambda/README.md`](lambda/README.md) for detailed setup instructions. Two 
 | Moniepoint | Company careers | Greenhouse API |
 | MyJobMag | Nigeria job board | HTML scraping |
 | LinkedIn | Professional network | Public guest API + HTML |
+| Jobs in Nigeria | Nigeria job board | WordPress RSS feed |
 | WhatsApp Groups | Group messages | Baileys listener + OpenAI parsing |
 
 ## Configuration
@@ -193,8 +194,8 @@ Rejects roles outside your scope by checking the title for:
 
 Controlled by `PIPELINE_CONFIG.MISSING_DATE_STRATEGY` in config:
 
-- **`"assume_recent"`** (default) — if a job has no date, treat it as posted now. This prevents good jobs from HTML-scraped sources (Arc.dev, Remote.co, Jobberman, LinkedIn, etc.) from being discarded just because the date element wasn't found.
-- **`"reject"`** — reject jobs with no date outright (strict mode).
+- **`"reject"`** (default) — reject jobs with no date outright. Each scraper now provides a fallback date when parsing fails, so this rarely triggers.
+- **`"assume_recent"`** — if a job has no date, treat it as posted now (capped by `MAX_DATELESS_PER_SOURCE`).
 
 ### Filter 5: Recency (`isPostedWithinHours`)
 
@@ -269,6 +270,7 @@ src/
       moniepoint.ts              # Moniepoint (Greenhouse)
       myjobmag.ts                # MyJobMag HTML
       linkedin.ts                # LinkedIn public guest API
+      jobsinnigeria.ts           # Jobs in Nigeria RSS feed
       whatsapp.ts                # WhatsApp submissions reader
     config.ts                    # Central pipeline thresholds
     openai.ts                    # AI scoring + summarization
