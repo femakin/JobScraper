@@ -239,6 +239,14 @@ async function main() {
   });
 }
 
+process.on("uncaughtException", (err) => {
+  console.error("[WhatsApp] Uncaught exception (process stays alive):", err.message);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("[WhatsApp] Unhandled rejection (process stays alive):", err);
+});
+
 main().catch((err) => {
   console.error("Fatal error:", err);
   process.exit(1);

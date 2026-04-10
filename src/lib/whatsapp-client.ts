@@ -52,20 +52,24 @@ export async function connectWhatsApp(
 
     if (connection === "close") {
       const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+      const errorMsg = (lastDisconnect?.error as Boom)?.message || "unknown";
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
       console.log(
-        `[WhatsApp] Connection closed (code: ${statusCode}).`,
-        shouldReconnect ? "Reconnecting..." : "Logged out — delete whatsapp-auth/ and re-scan."
+        `[WhatsApp] Connection closed (code: ${statusCode}, reason: ${errorMsg}).`,
+        shouldReconnect ? "Reconnecting in 5s..." : "Logged out — delete whatsapp-auth/ and re-scan."
       );
 
       if (shouldReconnect) {
-        setTimeout(() => connectWhatsApp(onReady), 3000);
+        setTimeout(() => connectWhatsApp(onReady), 5000);
       } else {
         process.exit(1);
       }
     }
   });
+
+  sock.ev.on("messages.update", () => {});
+  sock.ev.on("message-receipt.update", () => {});
 
   return sock;
 }
