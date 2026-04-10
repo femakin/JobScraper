@@ -88,6 +88,8 @@ export function isPostedWithinHours(job: ScrapedJob, hours: number): boolean {
 }
 
 export function filterJobs(jobs: ScrapedJob[]): ScrapedJob[] {
+  const datelessCountBySource: Record<string, number> = {};
+
   return jobs.filter((job) => {
     if (!isMatchingRole(job)) return false;
     if (!isNigeriaFriendly(job)) return false;
@@ -95,6 +97,12 @@ export function filterJobs(jobs: ScrapedJob[]): ScrapedJob[] {
 
     if (!job.posted_at) {
       if (PIPELINE_CONFIG.MISSING_DATE_STRATEGY === "reject") return false;
+
+      const src = job.source ?? "unknown";
+      const count = datelessCountBySource[src] ?? 0;
+      if (count >= PIPELINE_CONFIG.MAX_DATELESS_PER_SOURCE) return false;
+      datelessCountBySource[src] = count + 1;
+
       job.posted_at = new Date().toISOString();
     }
 
