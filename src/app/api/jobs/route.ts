@@ -18,8 +18,6 @@ export async function GET(request: NextRequest) {
     .order("scraped_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
-    console.log(query, "query");
-
   if (search) {
     query = query.or(
       `title.ilike.%${search}%,company.ilike.%${search}%,ai_summary.ilike.%${search}%`
