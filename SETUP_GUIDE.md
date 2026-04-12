@@ -568,6 +568,8 @@ This creates `lambda/dist/function.zip`. You'll upload this in the next step.
    | `TWILIO_ACCOUNT_SID` | your Twilio Account SID (same as `.env.local`) |
    | `TWILIO_AUTH_TOKEN` | your Twilio Auth Token (same as `.env.local`) |
    | `TWILIO_WHATSAPP_FROM` | `whatsapp:+14155238886` (or your Twilio number) |
+   | `TWILIO_WHATSAPP_JOB_CONTENT_SID` | (optional) Approved Content template `HX...` for job alerts when freeform fails with error 63016 ([Twilio template guide](https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates)) |
+   | `TWILIO_MESSAGING_SERVICE_SID` | (optional) Messaging Service `MG...` if you send templates through a Messaging Service |
    | `ADZUNA_APP_ID` | your Adzuna App ID (optional, leave empty to skip) |
    | `ADZUNA_APP_KEY` | your Adzuna App Key (optional, leave empty to skip) |
 
@@ -650,6 +652,7 @@ match both criteria. The scrapers are working fine — just no matching jobs rig
 3. **Are there jobs to notify about?** Check `jobs` table for rows with `relevance_score >= 60` and `is_notified = false`
 4. **Check the notifications table**: Look at `notifications` for `status = 'failed'` entries with error messages
 5. **Twilio trial limitation**: On trial, you can only send to verified numbers. Go to Twilio Console → Verified Caller IDs and add your number.
+6. **Error 63016 (template required)**: WhatsApp only allows **freeform** messages within ~24 hours after the user last messaged your Twilio WhatsApp number. Subscribers who have not messaged recently need an **approved Content template**. Set `TWILIO_WHATSAPP_JOB_CONTENT_SID` (and optionally `TWILIO_MESSAGING_SERVICE_SID` if you use a Messaging Service per Twilio). Follow Twilio’s guide: [Send WhatsApp notification messages with templates](https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates). See the README and `src/lib/twilio-job-message.ts` for the `{{1}}`–`{{6}}` variable layout.
 
 ### Lambda times out
 

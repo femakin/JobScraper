@@ -82,7 +82,10 @@ async function runScraper(
 export async function runAllScrapers(): Promise<{
   results: ScrapeResult[];
   totalNew: number;
+  /** Successful WhatsApp sends (Twilio). */
   notificationsSent: number;
+  /** Successful Telegram sends when linked + bot configured. */
+  telegramNotificationsSent: number;
 }> {
   const scrapers = getEnabledScrapers();
   const allNewJobs: ScrapedJob[] = [];
@@ -98,7 +101,12 @@ export async function runAllScrapers(): Promise<{
   }
 
   if (allNewJobs.length === 0) {
-    return { results, totalNew: 0, notificationsSent: 0 };
+    return {
+      results,
+      totalNew: 0,
+      notificationsSent: 0,
+      telegramNotificationsSent: 0,
+    };
   }
 
   // Deduplicate across sources (same job listed on multiple boards)
@@ -147,11 +155,13 @@ export async function runAllScrapers(): Promise<{
   const notifyableJobs = insertedJobs.filter(
     (j) => j.relevance_score >= PIPELINE_CONFIG.MIN_SCORE_TO_NOTIFY
   );
-  const notificationsSent = await notifyAllSubscribers(notifyableJobs);
+  const { whatsappSent, telegramSent } =
+    await notifyAllSubscribers(notifyableJobs);
 
   return {
     results,
     totalNew: insertedJobs.length,
-    notificationsSent,
+    notificationsSent: whatsappSent,
+    telegramNotificationsSent: telegramSent,
   };
 }

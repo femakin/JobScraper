@@ -2,10 +2,12 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { filterJobs } from "../src/lib/filter";
 import { getEnabledScrapers } from "../src/lib/scrapers/registry";
 import { PIPELINE_CONFIG } from "../src/lib/config";
-import type { ScrapedJob, Job, AIJobAnalysis } from "../src/lib/types";
+import type { ScrapedJob, Job, AIJobAnalysis, Subscriber } from "../src/lib/types";
 import OpenAI from "openai";
 import twilio from "twilio";
 import CryptoJS from "crypto-js";
+import { sendJobWhatsAppMessage } from "../src/lib/twilio-job-message";
+import { sendSubscriberTelegramJobIfLinked } from "../src/lib/telegram";
 
 let _supabase: SupabaseClient;
 function getSupabase() {
@@ -100,18 +102,24 @@ async function filterNewJobs(jobs: ScrapedJob[]): Promise<ScrapedJob[]> {
   return jobs.filter((job) => !existingSet.has(hashJob(job)));
 }
 
-async function notifySubscribers(insertedJobs: Job[]): Promise<number> {
+async function notifySubscribers(
+  insertedJobs: Job[]
+): Promise<{ whatsappSent: number; telegramSent: number }> {
   const notifyableJobs = insertedJobs.filter(
     (j) => j.relevance_score >= PIPELINE_CONFIG.MIN_SCORE_TO_NOTIFY
   );
-  if (notifyableJobs.length === 0) return 0;
+  if (notifyableJobs.length === 0) {
+    return { whatsappSent: 0, telegramSent: 0 };
+  }
 
   const { data: subscribers } = await getSupabase()
     .from("subscribers")
     .select("*")
     .eq("is_active", true);
 
-  if (!subscribers?.length) return 0;
+  if (!subscribers?.length) {
+    return { whatsappSent: 0, telegramSent: 0 };
+  }
 
   const accountSid = process.env.TWILIO_ACCOUNT_SID!;
   const authToken = process.env.TWILIO_AUTH_TOKEN!;
@@ -119,7 +127,8 @@ async function notifySubscribers(insertedJobs: Job[]): Promise<number> {
     process.env.TWILIO_WHATSAPP_FROM || "whatsapp:+14155238886";
   const client = twilio(accountSid, authToken);
 
-  let sentCount = 0;
+  let whatsappSent = 0;
+  let telegramSent = 0;
   let dailyLimitReached = false;
 
   for (const job of notifyableJobs) {
@@ -131,45 +140,20 @@ async function notifySubscribers(insertedJobs: Job[]): Promise<number> {
       const minRelevance = subscriber.preferences?.min_relevance ?? 60;
       if (job.relevance_score < minRelevance) continue;
 
-      const salary = job.salary_range ? `\nSalary: ${job.salary_range}` : "";
-      const tags = job.tags?.length
-        ? `\nSkills: ${job.tags.slice(0, 5).join(", ")}`
-        : "";
-
-      const body = [
-        `*New Job Alert!*`,
-        ``,
-        `*${job.title}*`,
-        `Company: ${job.company}`,
-        `Location: ${job.location}`,
-        salary,
-        ``,
-        `${job.ai_summary || ""}`,
-        tags,
-        ``,
-        `Relevance: ${job.relevance_score}/100`,
-        ``,
-        `Apply: ${job.url}`,
-        ``,
-        `_Reply STOP to unsubscribe_`,
-      ]
-        .filter((line) => line !== undefined)
-        .join("\n");
-
       try {
-        const message = await client.messages.create({
+        const sid = await sendJobWhatsAppMessage(client, {
           from: whatsappFrom,
           to: `whatsapp:${subscriber.phone_number}`,
-          body,
+          job,
         });
 
         await getSupabase().from("notifications").insert({
           job_id: job.id,
           subscriber_id: subscriber.id,
           status: "sent",
-          twilio_sid: message.sid,
+          twilio_sid: sid,
         });
-        sentCount++;
+        whatsappSent++;
       } catch (error: any) {
         if (error?.code === 63038 || error?.status === 429) {
           console.warn("Twilio daily limit reached — stopping notifications");
@@ -190,6 +174,12 @@ async function notifySubscribers(insertedJobs: Job[]): Promise<number> {
         });
       }
 
+      const tgOk = await sendSubscriberTelegramJobIfLinked(
+        job,
+        subscriber as Subscriber
+      );
+      if (tgOk) telegramSent++;
+
       await new Promise((r) => setTimeout(r, 1100));
     }
 
@@ -200,10 +190,12 @@ async function notifySubscribers(insertedJobs: Job[]): Promise<number> {
   }
 
   if (dailyLimitReached) {
-    console.log(`Sent ${sentCount} notifications before hitting Twilio daily limit`);
+    console.log(
+      `Sent ${whatsappSent} WhatsApp notifications before hitting Twilio daily limit`
+    );
   }
 
-  return sentCount;
+  return { whatsappSent, telegramSent };
 }
 
 interface ScrapeResult {
@@ -306,6 +298,7 @@ export async function handler(event: unknown) {
       results,
       totalNew: 0,
       notificationsSent: 0,
+      telegramNotificationsSent: 0,
       timestamp: new Date().toISOString(),
     };
     console.log("Result:", JSON.stringify(response));
@@ -376,13 +369,15 @@ export async function handler(event: unknown) {
     ),
   ];
 
-  const notificationsSent = await notifySubscribers(allJobsToNotify);
+  const { whatsappSent, telegramSent } =
+    await notifySubscribers(allJobsToNotify);
 
   const response = {
     success: true,
     results,
     totalNew: insertedJobs.length,
-    notificationsSent,
+    notificationsSent: whatsappSent,
+    telegramNotificationsSent: telegramSent,
     timestamp: new Date().toISOString(),
   };
 

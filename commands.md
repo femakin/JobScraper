@@ -21,6 +21,19 @@ curl -s 'http://localhost:3000/api/test-scraper?source=whatsapp' | node -e "proc
 # list all available scrapers
 curl -s 'http://localhost:3000/api/test-scraper?source=list' | node -e "process.stdin.on('data',d=>{const j=JSON.parse(d);console.log(JSON.stringify(j,null,2))})"
 
+# preview the exact WhatsApp job alert text (no send)
+curl -s -X POST 'http://localhost:3000/api/test-notification' \
+  -H "Authorization: Bearer YOUR_SCRAPE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"preview_only":true}'
+
+# send a real job alert to all active subscribers (same body as production)
+# uses latest job in DB; optional: {"job_id":"<uuid>","skip_mark_notified":true}
+curl -s -X POST 'http://localhost:3000/api/test-notification' \
+  -H "Authorization: Bearer YOUR_SCRAPE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
 
 3. WhatsApp Listener
 
@@ -71,6 +84,10 @@ OPENAI_API_KEY=
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_WHATSAPP_FROM=
+# Optional — WhatsApp approved template for job alerts outside 24h session (Twilio 63016)
+# https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates
+# TWILIO_WHATSAPP_JOB_CONTENT_SID=
+# TWILIO_MESSAGING_SERVICE_SID=
 SCRAPE_API_KEY=
 
 # optional

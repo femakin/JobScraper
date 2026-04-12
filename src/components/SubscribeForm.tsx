@@ -16,6 +16,11 @@ export function SubscribeForm() {
     message: string;
   } | null>(null);
 
+  const [tgPhone, setTgPhone] = useState("");
+  const [tgLoading, setTgLoading] = useState(false);
+  const [tgLink, setTgLink] = useState<string | null>(null);
+  const [tgError, setTgError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -47,6 +52,30 @@ export function SubscribeForm() {
       setResult({ success: false, message: "Network error. Please try again." });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTelegramLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTgLoading(true);
+    setTgError(null);
+    setTgLink(null);
+    try {
+      const res = await fetch("/api/telegram/link-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone_number: tgPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTgError(data.error || "Could not create link");
+        return;
+      }
+      if (data.deep_link) setTgLink(data.deep_link as string);
+    } catch {
+      setTgError("Network error. Please try again.");
+    } finally {
+      setTgLoading(false);
     }
   };
 
@@ -117,6 +146,61 @@ export function SubscribeForm() {
             </div>
           )}
         </form>
+
+        <div className="mt-8 border-t pt-6 space-y-3">
+          <h3 className="text-sm font-medium">Telegram (optional)</h3>
+          <p className="text-xs text-muted-foreground">
+            Use the same phone number you subscribed with. You will get a link to
+            open our bot in Telegram and finish linking.
+          </p>
+          <form onSubmit={handleTelegramLink} className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="tg-phone">Phone number</Label>
+              <Input
+                id="tg-phone"
+                type="tel"
+                placeholder="+234XXXXXXXXXX"
+                value={tgPhone}
+                onChange={(e) => setTgPhone(e.target.value)}
+                disabled={tgLoading}
+              />
+            </div>
+            <Button
+              type="submit"
+              variant="outline"
+              className="w-full"
+              disabled={tgLoading || !tgPhone.trim()}
+            >
+              {tgLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating link…
+                </>
+              ) : (
+                "Get Telegram link"
+              )}
+            </Button>
+          </form>
+          {tgError && (
+            <p className="text-xs text-destructive flex items-start gap-1">
+              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+              {tgError}
+            </p>
+          )}
+          {tgLink && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900 space-y-2">
+              <p className="font-medium">Open this link in Telegram</p>
+              <a
+                href={tgLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all text-green-800 underline"
+              >
+                {tgLink}
+              </a>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

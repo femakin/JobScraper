@@ -31,6 +31,10 @@ export interface Subscriber {
   };
   created_at: string;
   updated_at: string;
+  /** Set when the user completes Telegram linking via the bot deep link. */
+  telegram_chat_id?: string | null;
+  telegram_link_token?: string | null;
+  telegram_link_expires_at?: string | null;
 }
 
 export interface Notification {

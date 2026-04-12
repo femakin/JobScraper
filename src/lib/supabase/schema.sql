@@ -138,3 +138,12 @@ CREATE TRIGGER subscribers_updated_at
   BEFORE UPDATE ON subscribers
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
+
+-- Telegram (optional): link bot + store chat_id per subscriber (safe to re-run)
+ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT;
+ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS telegram_link_token TEXT;
+ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS telegram_link_expires_at TIMESTAMPTZ;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscribers_telegram_chat_id
+  ON subscribers(telegram_chat_id) WHERE telegram_chat_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscribers_telegram_link_token
+  ON subscribers(telegram_link_token) WHERE telegram_link_token IS NOT NULL;

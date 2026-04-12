@@ -64,7 +64,18 @@ Fill in all the values in `.env.local` (see comments in the file for where to ge
 4. Set the webhook URL to `https://your-app.com/api/webhook/twilio` (POST)
 5. Copy your Account SID and Auth Token to `.env.local`
 
-### 5. Run locally
+**WhatsApp error 63016 (“use a template”)** — Meta only allows **freeform** job messages while the user is inside the **24-hour customer care window** (they messaged your Twilio WhatsApp number recently). If a subscriber has not replied in 24+ hours, freeform fails for them while it may still work for you.
+
+This app **first sends the usual freeform alert**; if Twilio returns **63016**, it **retries once** using an approved **Content template** when you set:
+
+- `TWILIO_WHATSAPP_JOB_CONTENT_SID=HX...` (from [Twilio Console → Content Template Builder](https://console.twilio.com/us1/develop/sms/content-template-builder))
+- Optional: `TWILIO_MESSAGING_SERVICE_SID=MG...` if your Twilio setup sends templates via a [Messaging Service](https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates) (matches Twilio’s `messages.create` examples that use `contentSid` + `messagingServiceSid`)
+
+Official walkthrough: [Send WhatsApp notification messages with templates](https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates).
+
+The template must define **six** placeholders, in order: `{{1}}` title, `{{2}}` company, `{{3}}` location, `{{4}}` short summary, `{{5}}` apply URL, `{{6}}` relevance score (see `jobAlertTemplateVariables` in `src/lib/twilio-job-message.ts`). Use a **UTILITY** category template and wait for WhatsApp approval before relying on it in production.
+
+### 6. Run locally
 
 ```bash
 npm run dev
@@ -72,7 +83,7 @@ npm run dev
 
 Visit `http://localhost:3000` to see the dashboard.
 
-### 6. Trigger a scrape
+### 7. Trigger a scrape
 
 ```bash
 curl -X POST http://localhost:3000/api/scrape \
@@ -85,6 +96,7 @@ curl -X POST http://localhost:3000/api/scrape \
 | ------ | -------------------- | ------------------------------------ |
 | GET    | `/api/jobs`          | List jobs with search/filter/pagination |
 | POST   | `/api/scrape`        | Trigger a scrape run (auth required) |
+| POST   | `/api/test-notification` | Send or preview production-style job WhatsApp (Bearer `SCRAPE_API_KEY`) |
 | POST   | `/api/subscribe`     | Subscribe a phone number for alerts  |
 | POST   | `/api/webhook/twilio`| Twilio incoming message webhook      |
 
@@ -275,6 +287,7 @@ src/
     config.ts                    # Central pipeline thresholds
     openai.ts                    # AI scoring + summarization
     twilio.ts                    # WhatsApp sender
+    twilio-job-message.ts        # Job alert body + template fallback (Twilio 63016)
     dedup.ts                     # Hash deduplication
     filter.ts                    # 5-layer job filtering
     whatsapp-parser.ts           # OpenAI-based WhatsApp message parser
