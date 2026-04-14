@@ -13,6 +13,7 @@ import { scrapeMyJobMag } from "./myjobmag";
 import { scrapeWhatsApp } from "./whatsapp";
 import { scrapeLinkedIn } from "./linkedin";
 import { scrapeJobsInNigeria } from "./jobsinnigeria";
+import { scrapeWeWorkRemotely } from "./weworkremotely";
 
 // ---------------------------------------------------------------------------
 // Scraper Registry
@@ -139,6 +140,13 @@ export const SCRAPERS: ScraperConfig[] = [
     name: "Jobs in Nigeria",
     website: "https://jobsinnigeria.careers",
     scrape: scrapeJobsInNigeria,
+    enabled: true,
+  },
+  {
+    id: "weworkremotely",
+    name: "We Work Remotely",
+    website: "https://weworkremotely.com",
+    scrape: scrapeWeWorkRemotely,
     enabled: true,
   },
 ];
