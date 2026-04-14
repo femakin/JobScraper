@@ -141,11 +141,16 @@ async function processMessage(
 
   if (!hasJobSignal(text)) return;
 
-  const sender = key.participant || remoteJid || "unknown";
-  const senderPhone = sender.replace("@s.whatsapp.net", "").replace("@lid", "");
+  const participant = key.participant || "";
+  const isRealNumber = participant.endsWith("@s.whatsapp.net");
+  const senderPhone = isRealNumber
+    ? participant.replace("@s.whatsapp.net", "")
+    : null;
+  const pushName = msg.pushName || null;
 
   console.log(
-    `[WhatsApp] Job signal detected from ${remoteJid} (${text.length} chars)`
+    `[WhatsApp] Job signal detected from ${remoteJid} (${text.length} chars)` +
+      (pushName ? ` by ${pushName}` : "")
   );
 
   try {
@@ -155,13 +160,14 @@ async function processMessage(
       return;
     }
 
-    const contactUrl = parsed.url || `https://wa.me/${senderPhone}`;
+    const contactUrl =
+      parsed.url || (senderPhone ? `https://wa.me/${senderPhone}` : null);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (getSupabase() as any)
       .from("whatsapp_job_submissions")
       .insert({
-        phone_number: senderPhone,
+        phone_number: senderPhone || pushName || participant || "unknown",
         raw_message: text.slice(0, 5000),
         parsed_title: parsed.title,
         parsed_company: parsed.company,
